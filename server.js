@@ -11,35 +11,79 @@ var sql = require('mssql'),
     //  server: 'subnet2.noip.me', // You can use 'localhost\\instance' to connect to named instance
 //      server: '192.168.225.53',
 //      server: '192.168.2.105',
-      server: 'localhost',
+      server: '127.0.0.1',
       database: 'cisegate',
       port: '1219',
-
+      stream: false,
       options: {
-        encrypt: true // Use this if you're on Windows Azure
+        encrypt: false // Use this if you're on Windows Azure
       }
     };
 
+//process.on('uncaughtException', function(err) {
+//  console.log('Caught hauiz: ' + err);
+//});
+//sql.connect(sqlConfig, function (err) {
+//  // ... error checks
+//  console.log('before querying sql');
+//  if (err) {
+//    console.log('err: ' + err);
+//    callback('Error:' + err);
+//  }
+//});
 
-var getDataWithQuery = function (query, callback) {
+
+var getDataWithQuery = function (query, callback, stream) {
   sql.connect(sqlConfig, function (err) {
-    // ... error checks
+    //... error checks
     if (err) {
       console.log('err: ' + err);
       callback('Error:' + err);
     }
     var request = new sql.Request();
-    request.query(query, function (err, recordset) {
-      // ... error checks
-      if (err) {
-        console.log('err: ' + err);
-        callback('Error:' + err);
-      }
-      callback(recordset);
-//      console.dir(recordset);
-    });
+    console.log('hehe');
+
+    if (!stream) {
+
+      request.query(query, function (err, recordset) {
+        // ... error checks
+        console.log('querying sql');
+        if (err) {
+          console.log('err: ' + err);
+          callback('Error:' + err);
+        }
+        callback(recordset);
+      });
+    }
+    else {
+      request.query(query);
+      request.on('recordset', function(columns) {
+        // Emitted once for each recordset in a query
+        console.log('columns = ');
+        console.dir(columns);
+      });
+
+      request.on('row', function(row) {
+        // Emitted for each row in a recordset
+        console.log('row = ');
+        console.dir(row);
+      });
+
+      request.on('error', function(err) {
+        // May be emitted multiple times
+        console.log('err = ');
+        console.dir(err);
+      });
+
+      request.on('done', function(returnValue) {
+        // Always emitted as the last one
+        console.log('done = ');
+        console.dir(returnValue);
+      });
+    }
   });
-}
+
+};
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
@@ -144,6 +188,13 @@ app.post('/api/infected-in-month-year.json', function (req, res) {
 
 });
 
+app.post('/api/get-clients.json', function(req, res){
+  getDataWithQuery("select * from clients",
+    function(data){
+      res.send(data);
+    });
+});
+
 app.listen(8080);
 
 //app.post('/get-tables', function(request, response){
@@ -154,12 +205,7 @@ app.listen(8080);
 //      });
 //});
 
-app.post('/api/get-clients.json', function(req, res){
-  getDataWithQuery("select * from clients",
-    function(data){
-      res.send(data);
-    });
-});
+
 
 
 //sql.connect(sqlConfig, function (err) {
