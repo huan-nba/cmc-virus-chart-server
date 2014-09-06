@@ -1,89 +1,42 @@
-var sql = require('mssql'),
-    express = require('express'),
-    Q = require('q'),
-    bodyParser = require('body-parser'),
-    app = express(),
-    crypto = require('crypto'),
-    generatedTokens = [],
-    sqlConfig = {
-      user: 'sa',
-      password: '123',
-    //  server: 'subnet2.noip.me', // You can use 'localhost\\instance' to connect to named instance
-//      server: '192.168.225.53',
-      server: '192.168.2.105',
-//      server: '127.0.0.1',
-      database: 'cisegate',
-      port: '1219',
-      stream: false,
-      options: {
-        encrypt: false // Use this if you're on Windows Azure
+var express = require('express'),
+  bodyParser = require('body-parser'),
+  app = express(),
+  crypto = require('crypto'),
+  generatedTokens = [],
+  http = require('http'),
+//    serverUrl = 'http://localhost:8888/';
+  serverUrl = 'http://192.168.2.105:8888/';
+
+
+var getDataWithQuery = function (query, callback) {
+  http.get(serverUrl + 'tds?' + query, function(res) {
+//    console.log("Got response: " + res.statusCode);
+    var str = '';
+    res.on('data', function (chunk) {
+      str += chunk;
+    });
+    res.on('end', function () {
+      var rawData = JSON.parse(str).result[0];
+      var data = rawData.rows.map(function (row) {
+        var obj = {};
+        rawData.colData.forEach(function (val, index) {
+          var columnName = val.value;
+          obj[columnName] = row[index];
+        });
+        return obj;
+      });
+      if (callback) {
+        callback(data);
       }
-    };
-
-//process.on('uncaughtException', function(err) {
-//  console.log('Caught hauiz: ' + err);
-//});
-//sql.connect(sqlConfig, function (err) {
-//  // ... error checks
-//  console.log('before querying sql');
-//  if (err) {
-//    console.log('err: ' + err);
-//    callback('Error:' + err);
-//  }
-//});
-
-
-var getDataWithQuery = function (query, callback, stream) {
-  sql.connect(sqlConfig, function (err) {
-    //... error checks
-    if (err) {
-      console.log('err: ' + err);
-      callback('Error:' + err);
-    }
-    var request = new sql.Request();
-
-    if (!stream) {
-
-      request.query(query, function (err, recordset) {
-        // ... error checks
-        if (err) {
-          console.log('err: ' + err);
-          callback('Error:' + err);
-        }
-        callback(recordset);
-      });
-    }
-    else {
-      console.log('stream = true');
-      request.stream = true;
-      request.query(query);
-      request.on('recordset', function(columns) {
-        // Emitted once for each recordset in a query
-        console.log('columns = ');
-        console.dir(columns);
-      });
-
-      request.on('row', function(row) {
-        // Emitted for each row in a recordset
-        console.log('row = ');
-        console.dir(row);
-      });
-
-      request.on('error', function(err) {
-        // May be emitted multiple times
-        console.log('err = ');
-        console.dir(err);
-      });
-
-      request.on('done', function(returnValue) {
-        // Always emitted as the last one
-        console.log('done = ');
-        console.dir(returnValue);
-      });
+    });
+  }).on('error', function(e) {
+    console.log("Got error: " + e.message);
+    if (callback) {
+      callback('Error:' + e.message);
     }
   });
-
 };
+getDataWithQuery('select * from infected_2014_8');
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
@@ -95,7 +48,7 @@ app.all("/*", function (req, res, next) {
 });
 
 /*
-Precheck access to all api routes and block if valid token not presented
+ Precheck access to all api routes and block if valid token not presented
  */
 app.post('/api/*', function (req, res, next) {
   if (validTokenProvided(req.body.token)){
@@ -142,7 +95,7 @@ app.post('/auth.json', function (req, res) {
 app.post('/api/server-clients-count.json', function (req, res) {
   getDataWithQuery("select * from vw_server_clients_count",
     function (data) {
-        res.send(data);
+      res.send(data);
     });
 });
 
@@ -177,7 +130,7 @@ app.post('/api/top-10-infected-lastest.json', function (req, res) {
 
 app.post('/api/infected-in-month-year.json', function (req, res) {
   if (req.body.month && req.body.year) {
-    console.log('before query sql infected-in-month-year');
+//    console.log('before query sql infected-in-month-year');
     getDataWithQuery("exec infected_in_month_year " + req.body.month + ", " + req.body.year,
       function (data) {
         res.send(data);
