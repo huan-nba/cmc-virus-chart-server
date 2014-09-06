@@ -12,6 +12,7 @@
   "dependencies": {
     "body-parser": "^1.6.6",
     "express": "^4.8.5",
+    "forever": "^0.11.1",
     "mssql": "^1.1.1",
     "q": "^1.0.1"
   }

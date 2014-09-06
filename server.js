@@ -9,7 +9,9 @@ var sql = require('mssql'),
       user: 'sa',
       password: '123',
     //  server: 'subnet2.noip.me', // You can use 'localhost\\instance' to connect to named instance
-      server: '192.168.225.53',
+//      server: '192.168.225.53',
+//      server: '192.168.2.105',
+      server: 'localhost',
       database: 'cisegate',
       port: '1219',
 
@@ -71,6 +73,7 @@ var generateToken = function () {
 
 var validTokenProvided = function(token) {
   console.log('requested with token = ' + token);
+//  return true;
   if (token && generatedTokens.indexOf(token) > -1) {
     return true;
   }
@@ -95,8 +98,13 @@ app.post('/auth.json', function (req, res) {
 app.post('/api/server-clients-count.json', function (req, res) {
   getDataWithQuery("select * from vw_server_clients_count",
     function (data) {
-//        console.dir(data);
-      console.dir(req.body);
+        res.send(data);
+    });
+});
+
+app.post('/api/all-infected-tables.json', function (req, res) {
+  getDataWithQuery("select * from vw_all_infected_tables",
+    function (data) {
       res.send(data);
     });
 });
@@ -105,7 +113,6 @@ app.post('/api/server-clients-count.json', function (req, res) {
 app.post('/api/server-infected-clients-lastest.json', function (req, res) {
   getDataWithQuery("exec server_with_infected_clients_lastest",
     function (data) {
-//        console.dir(data);
       res.send(data);
     });
 });
@@ -113,8 +120,6 @@ app.post('/api/server-infected-clients-lastest.json', function (req, res) {
 app.post('/api/top-10-infected-clients-lastest.json', function (req, res) {
   getDataWithQuery("exec top_10_infected_clients_lastest",
     function (data) {
-//        console.dir(data);
-//        res.status(400).end();
       res.send(data);
     });
 });
@@ -122,10 +127,21 @@ app.post('/api/top-10-infected-clients-lastest.json', function (req, res) {
 app.post('/api/top-10-infected-lastest.json', function (req, res) {
   getDataWithQuery("exec top_10_infected_lastest",
     function (data) {
-//        console.dir(data);
-//        res.status(400).end();
       res.send(data);
     });
+});
+
+app.post('/api/infected-in-month-year.json', function (req, res) {
+  if (req.body.month && req.body.year) {
+    console.log('before query sql infected-in-month-year');
+    getDataWithQuery("exec infected_in_month_year " + req.body.month + ", " + req.body.year,
+      function (data) {
+        res.send(data);
+      });
+  } else {
+    res.status(400).send();
+  }
+
 });
 
 app.listen(8080);
@@ -138,13 +154,12 @@ app.listen(8080);
 //      });
 //});
 
-//app.post('/get-clients', function(request, response){
-//  getDataWithQuery("select * from clients",
-//                function(data){
-////                  console.dir(data);
-//                  response.send(data);
-//                });
-//});
+app.post('/api/get-clients.json', function(req, res){
+  getDataWithQuery("select * from clients",
+    function(data){
+      res.send(data);
+    });
+});
 
 
 //sql.connect(sqlConfig, function (err) {
