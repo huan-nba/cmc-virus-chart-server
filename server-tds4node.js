@@ -4,8 +4,9 @@ var express = require('express'),
   crypto = require('crypto'),
   generatedTokens = [],
   http = require('http'),
-//    serverUrl = 'http://localhost:8888/';
-  serverUrl = 'http://192.168.2.105:8888/';
+  compression = require('compression'),
+  serverUrl = 'http://localhost:8888/';
+//  serverUrl = 'http://subnet2.noip.me:8888/';
 
 
 var getDataWithQuery = function (query, callback) {
@@ -38,6 +39,7 @@ var getDataWithQuery = function (query, callback) {
 };
 getDataWithQuery('select * from infected_2014_8');
 
+app.use(compression());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.all("/*", function (req, res, next) {
