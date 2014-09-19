@@ -5,8 +5,8 @@ var express = require('express'),
   generatedTokens = [],
   http = require('http'),
   compression = require('compression'),
-  serverUrl = 'http://localhost:8888/';
-//  serverUrl = 'http://subnet2.noip.me:8888/';
+//  serverUrl = 'http://localhost:8888/';
+  serverUrl = 'http://subnet2.noip.me:8888/';
 
 
 var getDataWithQuery = function (query, callback) {
@@ -37,7 +37,6 @@ var getDataWithQuery = function (query, callback) {
     }
   });
 };
-getDataWithQuery('select * from infected_2014_8');
 
 app.use(compression());
 app.use(bodyParser.json());
@@ -101,8 +100,36 @@ app.post('/api/server-clients-count.json', function (req, res) {
     });
 });
 
+app.post('/api/server-status.json', function (req, res) {
+  getDataWithQuery("select * from vw_data_status",
+    function (data) {
+      res.send(data);
+    });
+});
+
 app.post('/api/all-infected-tables.json', function (req, res) {
   getDataWithQuery("select * from vw_all_infected_tables",
+    function (data) {
+      res.send(data);
+    });
+});
+
+app.post("/api/all-restrictedareas-tables.json", function (req, res) {
+  getDataWithQuery("select * from vw_all_restrictedareas_tables",
+    function (data) {
+      res.send(data);
+    });
+});
+
+app.post("/api/restrictedareas-latest.json", function (req, res) {
+  getDataWithQuery("exec restrictedareas_latest",
+    function (data) {
+      res.send(data);
+    });
+});
+
+app.post("/api/infected-latest.json", function (req, res) {
+  getDataWithQuery("exec infected_latest",
     function (data) {
       res.send(data);
     });
@@ -143,13 +170,28 @@ app.post('/api/infected-in-month-year.json', function (req, res) {
 
 });
 
+app.post('/api/restrictedareas-in-year.json', function (req, res) {
+  if (req.body.year) {
+//    console.log('before query sql infected-in-month-year');
+    getDataWithQuery("exec restrictedareas_in_year " + req.body.year,
+      function (data) {
+        res.send(data);
+      });
+  } else {
+    res.status(400).send();
+  }
+
+});
+
 app.post('/api/get-clients.json', function(req, res){
-  getDataWithQuery("select * from clients",
+  getDataWithQuery("select * from vw_clients",
     function(data){
       res.send(data);
     });
 });
 
+
+console.log('Server started listening on port 8080...');
 app.listen(8080);
 
 //app.post('/get-tables', function(request, response){
